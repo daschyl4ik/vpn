@@ -1,3 +1,3 @@
-variables for provider.tf
-/.terraform
+﻿variables for main.tf
 .terraform.lock.hcl
+\.terraform

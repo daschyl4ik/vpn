@@ -1,0 +1,84 @@
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the
+following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # aws_subnet.my_vpc_private will be created
+  + resource "aws_subnet" "my_vpc_private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "eu-central-1a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.0.32/27"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Name" = "my_vpc_private"
+        }
+      + tags_all                                       = {
+          + "Name" = "my_vpc_private"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # aws_subnet.my_vpc_public will be created
+  + resource "aws_subnet" "my_vpc_public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "eu-central-1a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.0.0/27"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = true
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Name" = "my_vpc_public"
+        }
+      + tags_all                                       = {
+          + "Name" = "my_vpc_public"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # aws_vpc.my_vpc will be created
+  + resource "aws_vpc" "my_vpc" {
+      + arn                                  = (known after apply)
+      + cidr_block                           = "10.0.0.0/26"
+      + default_network_acl_id               = (known after apply)
+      + default_route_table_id               = (known after apply)
+      + default_security_group_id            = (known after apply)
+      + dhcp_options_id                      = (known after apply)
+      + enable_classiclink                   = (known after apply)
+      + enable_classiclink_dns_support       = (known after apply)
+      + enable_dns_hostnames                 = (known after apply)
+      + enable_dns_support                   = true
+      + id                                   = (known after apply)
+      + instance_tenancy                     = "default"
+      + ipv6_association_id                  = (known after apply)
+      + ipv6_cidr_block                      = (known after apply)
+      + ipv6_cidr_block_network_border_group = (known after apply)
+      + main_route_table_id                  = (known after apply)
+      + owner_id                             = (known after apply)
+      + tags                                 = {
+          + "Name" = "my_vpc"
+        }
+      + tags_all                             = {
+          + "Name" = "my_vpc"
+        }
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
