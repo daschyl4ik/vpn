@@ -47,6 +47,7 @@ resource "aws_subnet" "my_vpc_private" {
   tags = {
     Name = "my_vpc_private"
   }
+
 }
 
 
