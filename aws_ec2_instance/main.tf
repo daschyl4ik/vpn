@@ -15,7 +15,7 @@ terraform {
 
 
 #launch instance
-resource "aws_instance" "my_instance" {
+resource "aws_instance" "main" {
   ami           = "ami-0440e5026412ff23f"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
   instance_type = "t3.micro"                  #free tier eligible 
   #subnet_id = "available after VPC is created"
@@ -28,7 +28,11 @@ root_block_device {
   volume_type = "gp3"
   volume_size = 8
   iops = 3000
-
 }
+
+tags {
+  Name = "pet-project-vpn-ec2"
+}
+
 
 }
