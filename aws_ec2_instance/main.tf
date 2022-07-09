@@ -16,7 +16,7 @@ terraform {
 
 #launch instance
 resource "aws_instance" "my_instance" {
-  ami           = "ami-065deacbcaac64cf2"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
-  instance_type = "t2.micro"                  #free tier eligible 
+  ami           = "ami-0440e5026412ff23f"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
+  instance_type = "t3.micro"                  #free tier eligible 
   #subnet_id = "available after VPC is created"
 }
