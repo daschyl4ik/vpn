@@ -1,6 +1,6 @@
 resource "aws_security_group" "main" {
   name        = "pet-project-vpn-sg"
-  description = "Allow my IP range to"
+  description = "Allow my IP range"
   vpc_id      = aws_vpc.main.id
 
   ingress {

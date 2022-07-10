@@ -1,6 +1,8 @@
+#launch instance
 resource "aws_instance" "main" {
   ami           = "ami-0440e5026412ff23f"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
-  instance_type = "t3.micro"                  #free tier eligible 
+  instance_type = "t3.micro"                  #free tier eligible
+  subnet_id = aws_subnet.public.id
 
   credit_specification {
     cpu_credits = "standard"
@@ -16,7 +18,7 @@ root_block_device {
 #A list of security group names to associate with.
 security_groups = [ "pet-project-vpn-sg" ]
 
-tags {
+tags = {
   Name = "pet-project-vpn-ec2"
 }
 
