@@ -1,8 +1,15 @@
+# find the VPC that matches the tags and gather all its data.
+data "aws_subnet" "public" {
+  tags = {
+    Name = "pet-project-vpn-public-subnet"
+  }
+}
+
 #launch instance
 resource "aws_instance" "main" {
   ami           = "ami-0c9b2924fcd9b73a4"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
   instance_type = "t3.micro"                  #free tier eligible
-  subnet_id = aws_subnet.public.id
+  subnet_id = data.aws_subnet.public.id
 
   credit_specification {
     cpu_credits = "standard"
