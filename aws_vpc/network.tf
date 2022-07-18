@@ -13,7 +13,7 @@ resource "aws_subnet" "public" {
   vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.0.0/27"
   map_public_ip_on_launch = true
-  availability_zone = "eu-north-1a"
+  availability_zone = "me-south-1a"
 
   tags = {
     Name = "pet-project-vpn-public-subnet"
@@ -26,7 +26,7 @@ resource "aws_subnet" "private" {
   vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.0.32/27"
   map_public_ip_on_launch = false
-  availability_zone = "eu-north-1a"
+  availability_zone = "me-south-1a"
 
   tags = {
     Name = "pet-project-vpn-private-subnet"

@@ -1,6 +1,6 @@
 #launch instance
 resource "aws_instance" "main" {
-  ami           = "ami-0440e5026412ff23f"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
+  ami           = "ami-0c9b2924fcd9b73a4"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
   instance_type = "t3.micro"                  #free tier eligible
   subnet_id = aws_subnet.public.id
 
