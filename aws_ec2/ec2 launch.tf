@@ -29,4 +29,6 @@ tags = {
   Name = "pet-project-vpn-ec2"
 }
 
+user_data = file("userdata.sh")
+
 }
