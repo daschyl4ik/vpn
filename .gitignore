@@ -1,0 +1,4 @@
+﻿variables for main.tf
+.terraform.lock.hcl
+\.terraform
+\ansible
