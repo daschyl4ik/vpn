@@ -25,7 +25,12 @@ tags = {
   Name = "pet-project-vpn-ec2"
 }
 
-user_data = file("userdata.sh")
+user_data = templatefile("userdata.sh.tftpl", {
+  user = "vpn_admin",
+  public_key = var.public_key
+})
+
+security_groups = [ "aws_security_group.main" ]
 
 }
 
