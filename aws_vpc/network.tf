@@ -41,15 +41,8 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-resource "aws_route_table" "main" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "10.0.0.0/26"
-    gateway_id = aws_internet_gateway.main.id
-  }
-
-  tags = {
-    Name = "pet-project-vpn-route-table"
-  }
+resource "aws_route" "internet_access" {
+  route_table_id         = aws_vpc.main.default_route_table_id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.main.id
 }

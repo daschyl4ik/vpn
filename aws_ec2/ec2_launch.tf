@@ -5,6 +5,56 @@ data "aws_subnet" "public" {
   }
 }
 
+
+#creating security group
+resource "aws_security_group" "main" {
+  name        = "pet-project-vpn-sg"
+  description = "Allow my IP range"
+  vpc_id = "vpc-0eef7c37b0c18d541"
+
+  ingress {
+    description      = "OpenVPN from my device - TCP"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr]
+  }
+
+ingress {
+    description      = "OpenVPN from my device - UDP"
+    from_port        = 1194
+    to_port          = 1194
+    protocol         = "udp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+ingress {
+    description      = "To access the instance"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "TCP"
+    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr]
+  }
+
+  
+#Security groups are stateful—if you send a request from your instance, 
+#the response traffic for that request is allowed to flow in regardless of inbound security group rules.
+
+#any outgoing traffic is allowed
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "pet-project-vpn-sg"
+  }
+}
+
+
 #launch instance
 resource "aws_instance" "main" {
   ami           = "ami-0c9b2924fcd9b73a4"     #free tier eligible, Ubuntu, 22.04 LTS, amd64
@@ -30,52 +80,6 @@ user_data = templatefile("userdata.sh.tftpl", {
   public_key = var.public_key
 })
 
-security_groups = [ "aws_security_group.main" ]
+vpc_security_group_ids = ["sg-0b0593eecac0c4193"]
 
-}
-
-
-#creating security group
-resource "aws_security_group" "main" {
-  name        = "pet-project-vpn-sg"
-  description = "Allow my IP range"
-
-  ingress {
-    description      = "OpenVPN from my device - TCP"
-    from_port        = 443
-    to_port          = 443
-    protocol         = "tcp"
-    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr]
-  }
-
-ingress {
-    description      = "OpenVPN from my device - UDP"
-    from_port        = 1194
-    to_port          = 1194
-    protocol         = "udp"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-
-ingress {
-    description      = "To access the instance"
-    from_port        = 22
-    to_port          = 22
-    protocol         = "ssh"
-    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr]
-  }
-#Security groups are stateful—if you send a request from your instance, 
-#the response traffic for that request is allowed to flow in regardless of inbound security group rules.
-
-#any outgoing traffic is allowed
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-
-  tags = {
-    Name = "pet-project-vpn-sg"
-  }
 }
