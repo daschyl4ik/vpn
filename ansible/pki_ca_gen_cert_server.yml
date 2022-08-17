@@ -1,0 +1,46 @@
+---
+- name: create pki, gen-sign req
+  hosts: all
+  become: yes
+
+  vars:
+   easyrsa3_path: /home/vpn_admin/easy-rsa-master/easyrsa3
+
+  tasks: 
+  - name: create pki
+    shell: cd {{ easyrsa3_path }} && ./easyrsa init-pki
+#./easyrsa3/pki as a result
+
+  - name: create ca
+    shell: cd {{ easyrsa3_path }} && ./easyrsa build-ca nopass
+    #common name = pet-project-vpn
+#After will be created:    
+#./easyrsa3/pki/private/ca.key
+#./easyrsa3/pki/ca.crt
+
+  - name: copy ca.key and ca.crt to etc/openvpn
+    shell: cp {{ easyrsa3_path }}/pki/private/ca.key /etc/openvpn ; cp {{ easyrsa3_path }}/pki/ca.crt etc/openvpn
+
+  - name: generate server server request 
+    shell: cd {{ easyrsa3_path }} && ./easyrsa gen-req server nopass
+#result: server.req and server.key       commom name: vpn_server
+
+  - name: sign server request 
+    shell: cd {{ easyrsa3_path }} && ./easyrsa sign-req server vpn_server
+    #result: vpn_server.crt
+
+  - name: copy vpn_server.crt to etc/openvpn
+    shell: cp {{ easyrsa3_path }}/pki/issued/vpn_server.crt /etc/openvpn
+
+  - name: generate DH params
+    shell: cd {{ easyrsa3_path }} && ./easyrsa gen-dh
+
+  - name: copy dh.pem to etc/openvpn
+    shell: cp {{ easyrsa3_path }}/pki/dh.pem /etc/openvpn
+
+   - name: copy ca.crt file from server to local
+    fetch:
+      src: {{ easyrsa3_path }}/pki/ca.crt
+      dest: /home/ansible_files_from_server/
+      flat: yes
+

@@ -1,6 +1,7 @@
 ﻿variables for main.tf
 .terraform.lock.hcl
 \.terraform
-\ansible
+\ansible\ping.yml
+\ansible\ssh_connection.sh
 terraform.tfstate
 terraform.tfstate.backup

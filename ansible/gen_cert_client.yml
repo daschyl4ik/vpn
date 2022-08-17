@@ -1,0 +1,35 @@
+---
+- name: gen and sign reqs for client, move them to local host
+  hosts: all
+  become: yes
+
+  vars:
+   easyrsa3_path: /home/vpn_admin/easy-rsa-master/easyrsa3
+   client_name: client1
+
+  tasks: 
+  - name: generate client request 
+    shell: cd {{ easyrsa3_path }} && ./easyrsa gen-req client nopass
+#common name - client1   result - client.req and client.key
+
+  - name: sign client request 
+    shell: cd {{ easyrsa3_path }} && ./easyrsa sign-req client {{client_name}}
+#client1.crt
+
+  - name: copy crt file from server to local
+    fetch:
+      src: {{ easyrsa3_path }}/pki/issued/{{client_name}}.crt
+      dest: /home/ansible_files_from_server/
+      flat: yes
+
+  - name: copy key file from server to local
+    fetch:
+      src: {{ easyrsa3_path }}/pki/private/client.key
+      dest: /home/ansible_files_from_server/
+      flat: yes
+
+  - name: Remove key file
+  ansible.builtin.file:
+    path: {{ easyrsa3_path }}/pki/private/client.key
+    state: absent
+
