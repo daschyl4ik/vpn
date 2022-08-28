@@ -1,0 +1,2 @@
+[vpn_server]
+ubuntu   ansible_host=15.185.80.224   ansible_user=vpn_admin
