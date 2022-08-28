@@ -1,6 +1,7 @@
 ﻿variables for main.tf
 .terraform.lock.hcl
 \.terraform
-\ansible
+\ansible\group_vars
+\ansible\hosts.txt
 terraform.tfstate
 terraform.tfstate.backup
