@@ -1,0 +1,6 @@
+﻿variables for main.tf
+.terraform.lock.hcl
+\.terraform
+\ansible
+terraform.tfstate
+terraform.tfstate.backup
