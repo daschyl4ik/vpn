@@ -1,66 +1,87 @@
 ---
 
-- name: update linux
-  shell: apt-get update
+- name: 'update linux'
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: full
 
-- name: upgrade linux
-  shell: apt-get upgrade
+- name: 'install ovpn and zip'
+  ansible.builtin.apt:
+    name:
+     - ovpn 
+     - zip
+    state: 'latest'
 
-- name: install ovpn
-  yum: name=openvpn state=latest 
+- name: 'download easy-rsa'
+  ansible.builtin.get_url:
+    url: 'https://github.com/OpenVPN/easy-rsa/archive/master.zip'
+    dest: '/home/vpn_admin'
 
-- name: install zip
-  yum: name=zip state=latest
+- name: 'unpack easy-rsa'
+  ansible.builtin.unarchive:
+    src: /home/vpn_admin
+    dest: /home/vpn_admin
+    remote_src: yes
 
-- name: download easy-rsa
-  get_url: url=https://github.com/OpenVPN/easy-rsa/archive/master.zip dest=/home/vpn_admin
+- name: 'create pki and ca, gen DH params'
+  ansible.bultin.command: './easyrsa {{item.command}}'
+  args:
+    chdir: '{{ easyrsa3_path }}'
+    creates: '{{item.creates}}'
+  with_items:
+  - {command: init-pki, creates: '{{ easyrsa3_path }}/pki'}
+  - {command: build-ca nopass, creates: ['{{ easyrsa3_path }}/pki/private/ca.key', '{{ easyrsa3_path }}/pki/ca.crt']}
+  - {command: gen-dh, creates: '{{ easyrsa3_path }}/pki/dh.pem'}
 
-- name: unzip rsa
-  shell: unzip master.zip
+- name: 'gen server req, sign server req'
+  ansible.bultin.command: './easyrsa {{item.command}}'
+  args:
+    chdir: '{{ easyrsa3_path }}'
+    creates: '{{item.creates}}'
+  with_items:
+  - {command: gen-req server nopass, creates: ['{{ easyrsa3_path }}/pki/reqs/server.req','{{ easyrsa3_path }}/pki/private/server.key']}
+  - {command: sign-req server vpn_server, creates: '{{ easyrsa3_path }}/pki/issued/vpn_server.crt'}
+#common name = pet-project-vpn
 
-- name: create pki
-  shell: cd {{ easyrsa3_path }} && ./easyrsa init-pki
-#./easyrsa3/pki as a result
+- name: 'Copy generated/signed and local conf files to etc/openvpn'
+  ansible.builtin.copy:
+    src: '{{item.src}}'
+    dest: '{{item.dest}}'
+    remote_src: yes
+  with_items:
+  - {src: '{{ easyrsa3_path }}/pki/private/ca.key', dest: '/etc/openvpn/ca.key'}
+  - {src: '{{ easyrsa3_path }}/pki/ca.crt', dest: '/etc/openvpn/ca.crt'}
+  - {src: '{{ easyrsa3_path }}/pki/issued/vpn_server.crt', dest: '/etc/openvpn/vpn_server.crt'}
+  - {src: '{{ easyrsa3_path }}/pki/dh.pem', dest: '/etc/openvpn/dh.pem'}
+  - {src: 'openssl.cnf', dest: '/etc/openvpn/openssl.cnf'}
+  - {src: 'server.conf', dest: '/etc/openvpn/server.conf'}
 
-- name: create ca
-  shell: cd {{ easyrsa3_path }} && ./easyrsa build-ca nopass
-    #common name = pet-project-vpn
-#After will be created:    
-#./easyrsa3/pki/private/ca.key
-#./easyrsa3/pki/ca.crt
-
-- name: copy ca.key and ca.crt to etc/openvpn
-  shell: cp {{ easyrsa3_path }}/pki/private/ca.key /etc/openvpn ; cp {{ easyrsa3_path }}/pki/ca.crt etc/openvpn
-
-- name: generate server server request 
-  shell: cd {{ easyrsa3_path }} && ./easyrsa gen-req server nopass
-#result: server.req and server.key       commom name: vpn_server
-
-- name: sign server request 
-  shell: cd {{ easyrsa3_path }} && ./easyrsa sign-req server vpn_server
-    #result: vpn_server.crt
-
-- name: copy vpn_server.crt to etc/openvpn
-  shell: cp {{ easyrsa3_path }}/pki/issued/vpn_server.crt /etc/openvpn
-
-- name: generate DH params
-  shell: cd {{ easyrsa3_path }} && ./easyrsa gen-dh
-
-- name: copy dh.pem to etc/openvpn
-  shell: cp {{ easyrsa3_path }}/pki/dh.pem /etc/openvpn
-
-- name: copy ca.crt file from server to local
-  fetch:
-    src: {{ easyrsa3_path }}/pki/ca.crt
-    dest: /home/ansible_files_from_server/
+- name: 'copy ca.crt file from server to local'
+  ansible.builtin.fetch:
+    src: '{{ easyrsa3_path }}/pki/ca.crt'
+    dest: '/home/ansible_files_from_server/'
     flat: yes
 
-- name: Copy openssl.cnf to the server
-  ansible.builtin.copy:
-    src: openssl.cnf
-    dest: /etc/openvpn/openssl.cnf
+- name: 'gen client req, sign client req'
+  ansible.bultin.command: './easyrsa {{item.command}}'
+  args:
+    chdir: '{{ easyrsa3_path }}'
+    creates: '{{item.creates}}'
+  with_items:
+  - {command: gen-req client nopass, creates: ['{{ easyrsa3_path }}/pki/reqs/client.req','{{ easyrsa3_path }}/pki/private/client.key']}
+  - {command: 'sign-req client {{client_name}}', creates: '{{ easyrsa3_path }}/pki/issued/{{client_name}}.crt'}
+  #common name: {{client_name}}
 
-- name: Copy server.conf to the server
-  ansible.builtin.copy:
-    src: server.conf
-    dest: /etc/openvpn/server.conf
+- name: 'copy {{client_name}}.crt and client.key files from server to local'
+  ansible.builtin.fetch:
+    src: '{{item}}'
+    dest: '/home/ansible_files_from_server/'
+    flat: yes  
+with_items:
+- '{{ easyrsa3_path }}/pki/issued/{{client_name}}.crt'
+- '{{ easyrsa3_path }}/pki/private/client.key'
+
+- name: 'delete client.key files'
+  ansible.builtin.file:
+   path: '{{ easyrsa3_path }}/pki/private/client.key'
+   state: absent
