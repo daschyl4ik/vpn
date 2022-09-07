@@ -2,22 +2,22 @@
 
 - name: 'update linux'
   ansible.builtin.apt:
-    update_cache: yes
-    upgrade: full
+    update_cache: true
+    upgrade: 'full'
 
 - name: 'install ovpn and zip'
   ansible.builtin.apt:
     name:
-     - ovpn 
-     - zip
-     - easy-rsa
+     - 'ovpn' 
+     - 'zip'
+     - 'easy-rsa'
     state: 'latest'
     #easy-rsa will be installed into /usr/share/easy-rsa
 
 - name: 'create pki and ca, gen DH params, gen and sign server/client req'
   ansible.bultin.command: '/usr/share/easy-rsa/easyrsa {{item.command}}'
   args:
-    creates: '{{item.creates}}'
+    creates: '{{ item.creates }}'
   loop:
   - { command: 'init-pki', creates: '{{ easyrsa3_path }}/pki' }
   - { command: '--batch build-ca nopass', creates: ['{{ easyrsa3_path }}/pki/private/ca.key', '{{ easyrsa3_path }}/pki/ca.crt'] }
@@ -29,9 +29,9 @@
 
 - name: 'Copy generated/signed and local conf files to etc/openvpn'
   ansible.builtin.copy:
-    src: '{{item.src}}'
-    dest: '{{item.dest}}'
-    remote_src: yes
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    remote_src: true
   loop:
   - { src: '{{ easyrsa3_path }}/pki/private/ca.key', dest: '/etc/openvpn/ca.key' }
   - { src: '{{ easyrsa3_path }}/pki/ca.crt', dest: '/etc/openvpn/ca.crt' }
@@ -42,9 +42,9 @@
 
 - name: 'copy copy ca.crt, client.crt and client.key files from server to local'
   ansible.builtin.fetch:
-    src: '{{item}}'
+    src: '{{ item }}'
     dest: '/home/ansible_files_from_server/'
-    flat: yes  
+    flat: true  
   loop:
   - '{{ easyrsa3_path }}/pki/issued/client.crt'
   - '{{ easyrsa3_path }}/pki/private/client.key'
