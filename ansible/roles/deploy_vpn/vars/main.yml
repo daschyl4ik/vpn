@@ -1,3 +1,2 @@
 ---
-easyrsa3_path: /home/vpn_admin/easy-rsa-master/easyrsa3
-client_name: client1
+easyrsa3_path: /home/vpn_admin

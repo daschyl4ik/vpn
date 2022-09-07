@@ -10,76 +10,45 @@
     name:
      - ovpn 
      - zip
+     - easy-rsa
     state: 'latest'
+    #easy-rsa will be installed into /usr/share/easy-rsa
 
-- name: 'download easy-rsa'
-  ansible.builtin.get_url:
-    url: 'https://github.com/OpenVPN/easy-rsa/archive/master.zip'
-    dest: '/home/vpn_admin'
-
-- name: 'unpack easy-rsa'
-  ansible.builtin.unarchive:
-    src: /home/vpn_admin
-    dest: /home/vpn_admin
-    remote_src: yes
-
-- name: 'create pki and ca, gen DH params'
-  ansible.bultin.command: './easyrsa {{item.command}}'
+- name: 'create pki and ca, gen DH params, gen and sign server/client req'
+  ansible.bultin.command: '/usr/share/easy-rsa/easyrsa {{item.command}}'
   args:
-    chdir: '{{ easyrsa3_path }}'
     creates: '{{item.creates}}'
-  with_items:
-  - {command: init-pki, creates: '{{ easyrsa3_path }}/pki'}
-  - {command: build-ca nopass, creates: ['{{ easyrsa3_path }}/pki/private/ca.key', '{{ easyrsa3_path }}/pki/ca.crt']}
-  - {command: gen-dh, creates: '{{ easyrsa3_path }}/pki/dh.pem'}
-
-- name: 'gen server req, sign server req'
-  ansible.bultin.command: './easyrsa {{item.command}}'
-  args:
-    chdir: '{{ easyrsa3_path }}'
-    creates: '{{item.creates}}'
-  with_items:
-  - {command: gen-req server nopass, creates: ['{{ easyrsa3_path }}/pki/reqs/server.req','{{ easyrsa3_path }}/pki/private/server.key']}
-  - {command: sign-req server vpn_server, creates: '{{ easyrsa3_path }}/pki/issued/vpn_server.crt'}
-#common name = pet-project-vpn
+  loop:
+  - { command: 'init-pki', creates: '{{ easyrsa3_path }}/pki' }
+  - { command: '--batch build-ca nopass', creates: ['{{ easyrsa3_path }}/pki/private/ca.key', '{{ easyrsa3_path }}/pki/ca.crt'] }
+  - { command: 'gen-dh', creates: '{{ easyrsa3_path }}/pki/dh.pem' }
+  - { command: '--batch gen-req server nopass', creates: ['{{ easyrsa3_path }}/pki/reqs/server.req','{{ easyrsa3_path }}/pki/private/server.key'] }
+  - { command: '--batch sign-req server server', creates: '{{ easyrsa3_path }}/pki/issued/server.crt' }
+  - { command: '--batch gen-req client nopass', creates: ['{{ easyrsa3_path }}/pki/reqs/client.req','{{ easyrsa3_path }}/pki/private/client.key'] }
+  - { command: '--batch sign-req client client', creates: '{{ easyrsa3_path }}/pki/issued/client.crt' }
 
 - name: 'Copy generated/signed and local conf files to etc/openvpn'
   ansible.builtin.copy:
     src: '{{item.src}}'
     dest: '{{item.dest}}'
     remote_src: yes
-  with_items:
-  - {src: '{{ easyrsa3_path }}/pki/private/ca.key', dest: '/etc/openvpn/ca.key'}
-  - {src: '{{ easyrsa3_path }}/pki/ca.crt', dest: '/etc/openvpn/ca.crt'}
-  - {src: '{{ easyrsa3_path }}/pki/issued/vpn_server.crt', dest: '/etc/openvpn/vpn_server.crt'}
-  - {src: '{{ easyrsa3_path }}/pki/dh.pem', dest: '/etc/openvpn/dh.pem'}
-  - {src: 'openssl.cnf', dest: '/etc/openvpn/openssl.cnf'}
-  - {src: 'server.conf', dest: '/etc/openvpn/server.conf'}
+  loop:
+  - { src: '{{ easyrsa3_path }}/pki/private/ca.key', dest: '/etc/openvpn/ca.key' }
+  - { src: '{{ easyrsa3_path }}/pki/ca.crt', dest: '/etc/openvpn/ca.crt' }
+  - { src: '{{ easyrsa3_path }}/pki/issued/server.crt', dest: '/etc/openvpn/server.crt' }
+  - { src: '{{ easyrsa3_path }}/pki/dh.pem', dest: '/etc/openvpn/dh.pem' }
+  - { src: 'openssl.cnf', dest: '/etc/openvpn/openssl.cnf' }
+  - { src: 'server.conf', dest: '/etc/openvpn/server.conf' }
 
-- name: 'copy ca.crt file from server to local'
-  ansible.builtin.fetch:
-    src: '{{ easyrsa3_path }}/pki/ca.crt'
-    dest: '/home/ansible_files_from_server/'
-    flat: yes
-
-- name: 'gen client req, sign client req'
-  ansible.bultin.command: './easyrsa {{item.command}}'
-  args:
-    chdir: '{{ easyrsa3_path }}'
-    creates: '{{item.creates}}'
-  with_items:
-  - {command: gen-req client nopass, creates: ['{{ easyrsa3_path }}/pki/reqs/client.req','{{ easyrsa3_path }}/pki/private/client.key']}
-  - {command: 'sign-req client {{client_name}}', creates: '{{ easyrsa3_path }}/pki/issued/{{client_name}}.crt'}
-  #common name: {{client_name}}
-
-- name: 'copy {{client_name}}.crt and client.key files from server to local'
+- name: 'copy copy ca.crt, client.crt and client.key files from server to local'
   ansible.builtin.fetch:
     src: '{{item}}'
     dest: '/home/ansible_files_from_server/'
     flat: yes  
-with_items:
-- '{{ easyrsa3_path }}/pki/issued/{{client_name}}.crt'
-- '{{ easyrsa3_path }}/pki/private/client.key'
+  loop:
+  - '{{ easyrsa3_path }}/pki/issued/client.crt'
+  - '{{ easyrsa3_path }}/pki/private/client.key'
+  - '{{ easyrsa3_path }}/pki/ca.crt'
 
 - name: 'delete client.key files'
   ansible.builtin.file:
