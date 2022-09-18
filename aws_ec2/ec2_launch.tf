@@ -10,7 +10,7 @@ data "aws_subnet" "public" {
 resource "aws_security_group" "main" {
   name        = "pet-project-vpn-sg"
   description = "Allow my IP range"
-  vpc_id = "vpc-0eef7c37b0c18d541"
+  vpc_id = var.vpc_id
 
   ingress {
     description      = "OpenVPN from my device - TCP"
@@ -80,6 +80,7 @@ user_data = templatefile("userdata.sh.tftpl", {
   public_key = var.public_key
 })
 
-vpc_security_group_ids = ["sg-0b0593eecac0c4193"]
+vpc_security_group_ids = [aws_security_group.main.id]
+#vpc_security_group_ids = ["sg-0e8917fac11bfc148"]
 
 }
