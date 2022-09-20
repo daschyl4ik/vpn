@@ -44,6 +44,7 @@
   - { src: '{{ easyrsa3_path }}/pki/private/server.key', dest: '/etc/openvpn/server.key' }
   - { src: '{{ easyrsa3_path }}/pki/issued/server.crt', dest: '/etc/openvpn/server.crt' }
   - { src: '{{ easyrsa3_path }}/pki/dh.pem', dest: '/etc/openvpn/dh.pem' }
+  - { src: '{{ easyrsa3_path }}/pki/crl.pem', dest: '/etc/openvpn/crl.pem' }
 
 - name: 'Copy local conf files to etc/openvpn'
   ansible.builtin.copy:
@@ -74,5 +75,10 @@
     cmd: '{{ item }}'
   loop:
   - 'sysctl net.ipv4.ip_forward=1'
-  - 'sudo systemctl start openvpn-server@server'
-  - 'systemctl enable openvpn-server@server'
+  - 'sysctl --system'
+  - 'systemctl enable openvpn@server'
+  - 'systemctl restart openvpn@server'
+
+- name: 'Run a script to configure iptables'
+  ansible.builtin.script: '/home/ansible_files/playbooks/deploy_vpn/files/iptables.sh'
+
