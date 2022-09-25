@@ -1,2 +1,4 @@
 ---
-easyrsa3_path: /home/vpn_admin
+easyrsa3_path: '/home/vpn_admin'
+client_conf_path: '/etc/openvpn/client.conf'
+client: 'me'
