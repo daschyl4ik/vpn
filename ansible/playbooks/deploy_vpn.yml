@@ -1,0 +1,8 @@
+---
+- name: deploy vpn
+  hosts: all
+  become: true
+  gather_facts: true
+
+  roles:
+   - deploy_vpn

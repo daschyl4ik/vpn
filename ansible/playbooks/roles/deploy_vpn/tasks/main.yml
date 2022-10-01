@@ -1,0 +1,149 @@
+---
+
+- name: 'deploy vpn'
+  tags: [ 'deploy_vpn', 'deploy' ] 
+  block:
+
+  - name: 'update linux'
+    ansible.builtin.apt:
+      update_cache: true
+      upgrade: 'full'
+
+  - name: 'install openvpn, zip and easy-rsa'
+    ansible.builtin.apt:
+      name:
+       - 'openvpn' 
+       - 'zip'
+       - 'easy-rsa'
+      state: 'latest'
+      #easy-rsa will be installed into /usr/share/easy-rsa
+
+  - name: 'create pki and ca, gen DH params, gen and sign server req'
+    ansible.builtin.command: 
+      cmd: '/usr/share/easy-rsa/easyrsa {{ item.command }}'
+      creates: '{{ item.creates }}'
+    loop:
+    - { command: 'init-pki', creates: '{{ easyrsa3_path }}/pki' }
+    - { command: '--batch build-ca nopass', creates: ['{{ easyrsa3_path }}/pki/private/ca.key', '{{ easyrsa3_path }}/pki/ca.crt'] }
+    - { command: 'gen-dh', creates: '{{ easyrsa3_path }}/pki/dh.pem' }
+    - { command: 'gen-crl', creates: '{{ easyrsa3_path }}/pki/crl.pem' }
+    - { command: '--batch gen-req server nopass', creates: ['{{ easyrsa3_path }}/pki/reqs/server.req','{{ easyrsa3_path }}/pki/private/server.key'] }
+    - { command: '--batch sign-req server server', creates: '{{ easyrsa3_path }}/pki/issued/server.crt' }
+
+  - name: 'create server dir in /etc/openvpn and iptables dir in /etc/'
+    ansible.builtin.file:
+     path: {{ item }}
+     state: directory
+    loop:
+    - '/etc/openvpn/server'
+    - '/etc/iptables'
+
+  - name: 'Copy generated/signed to etc/openvpn'
+    ansible.builtin.copy:
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+      remote_src: true
+    loop:
+    - { src: '{{ easyrsa3_path }}/pki/private/ca.key', dest: '/etc/openvpn/ca.key' }
+    - { src: '{{ easyrsa3_path }}/pki/ca.crt', dest: '/etc/openvpn/ca.crt' }
+    - { src: '{{ easyrsa3_path }}/pki/private/server.key', dest: '/etc/openvpn/server.key' }
+    - { src: '{{ easyrsa3_path }}/pki/issued/server.crt', dest: '/etc/openvpn/server.crt' }
+    - { src: '{{ easyrsa3_path }}/pki/dh.pem', dest: '/etc/openvpn/dh.pem' }
+    - { src: '{{ easyrsa3_path }}/pki/crl.pem', dest: '/etc/openvpn/crl.pem' }
+
+  - name: 'Copy local files to remote host'
+    ansible.builtin.copy:
+      src: '{{ item.src }}'
+      dest: '{{ item.dest }}'
+      remote_src: false
+    loop:
+    - { src: 'openssl.cnf', dest: '/etc/openvpn/openssl.cnf' }
+    - { src: 'server.conf', dest: '/etc/openvpn/server.conf' }
+    - { src: 'iptables-openvpn.service', dest: '/etc/systemd/system/iptables-openvpn.service' }
+
+  - name: 'setting up IP forwarding and starting the service'
+    ansible.builtin.command: 
+      cmd: '{{ item }}'
+    loop:
+    - 'sysctl net.ipv4.ip_forward=1'
+    - 'sysctl --system'
+    - 'systemctl enable openvpn@server'
+    - 'systemctl restart openvpn@server'
+
+  - name: 'generate iptables add/rm scripts'
+    ansible.builtin.template: 
+      src: {{ item.src }}
+      dest: {{ item.dest }}
+      mode: 0755
+    loop:
+    - { src: 'add-openvpn-rules.sh.j2', dest: '/etc/iptables/add-openvpn-rules.sh' }
+    - { src: 'rm-openvpn-rules.sh.j2', dest: '/etc/iptables/rm-openvpn-rules.sh' }
+
+- name: 'enable service and apply rules'
+    ansible.builtin.command: 
+      cmd: '{{ item }}'
+    loop:
+    - 'systemctl daemon-reload'
+    - 'systemctl enable iptables-openvpn'
+    - 'systemctl start iptables-openvpn'
+
+
+- name: 'create new vpn client'
+  tags: ['update', 'new_vpn_client']
+  block:
+
+  - name: 'gen and sign client req'
+    ansible.builtin.command: 
+      cmd: '/usr/share/easy-rsa/easyrsa {{ item.command }}'
+      creates: '{{ item.creates }}'
+    loop:
+    - { command: '--batch gen-req {{ client }} nopass', creates: ['{{ easyrsa3_path }}/pki/reqs/{{ client }}.req','{{ easyrsa3_path }}/pki/private/{{ client }}.key'] }
+    - { command: '--batch sign-req client {{ client }}', creates: '{{ easyrsa3_path }}/pki/issued/{{ client }}.crt' }
+
+  - name: 'Copy client.conf to etc/openvpn'
+    ansible.builtin.copy:
+      src: 'client.conf'
+      dest: '/etc/openvpn/client.conf'
+      remote_src: false
+
+  - name: 'copy ca.crt, client.crt and client.key files from server to local'
+    ansible.builtin.fetch:
+      src: '{{ item }}'
+      dest: '/home/ansible_files_from_server/'
+      flat: true
+    loop:
+    - '{{ easyrsa3_path }}/pki/issued/{{ client }}.crt'
+    - '{{ easyrsa3_path }}/pki/private/{{ client }}.key'
+    - '{{ easyrsa3_path }}/pki/ca.crt'
+
+   #THIS WORKS, but includes markers. If I don't use unique markers, the new 'cycle' will overwrite the previous one
+  - name: 'add ca.crt content to client.conf'
+    ansible.builtin.blockinfile:
+     block: '{{ item.content }}'
+     marker: ' {{ item.name }}'
+     path: '{{ client_conf_path }}'
+    loop:
+    - { content: '<ca>', name: ';ca block starts' }
+    - { content: "{{ lookup('ansible.builtin.file', '/home/ansible_files_from_server/ca.crt') }}", name: ';ansible ca block' }
+    - { content: '</ca>', name: ';ca block ends'}
+    - { content: '<cert>', name: ';cert block starts' }
+    - { content: "{{ lookup('ansible.builtin.file', '/home/ansible_files_from_server/{{ client }}.crt') }}", name: ';ansible client crt block' }
+    - { content: '</cert>', name: ';cert block ends'}
+    - { content: '<key>', name: ';key block starts' }
+    - { content: "{{ lookup('ansible.builtin.file', '/home/ansible_files_from_server/{{ client }}.key') }}", name: ';ansible client key block' }
+    - { content: '</key>', name: ';key block ends'}
+
+  - name: 'rename client conf to client name'
+    ansible.builtin.command: 
+      cmd: 'mv /etc/openvpn/client.conf /etc/openvpn/{{ client }}.conf'
+
+  - name: 'copy client.conf from server to local'
+    ansible.builtin.fetch:
+      src: '/etc/openvpn/{{ client }}.conf'
+      dest: '/home/ansible_files_from_server/'
+      flat: true  
+
+  - name: 'delete client.key files'
+    ansible.builtin.file:
+     path: '{{ easyrsa3_path }}/pki/private/{{ client }}.key'
+     state: absent

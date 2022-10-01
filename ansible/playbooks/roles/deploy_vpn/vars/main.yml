@@ -1,0 +1,5 @@
+---
+easyrsa3_path: '/home/vpn_admin'
+client_conf_path: '/etc/openvpn/client.conf'
+client: ['me', 'dima']
+vpn_network: '10.8.0.0/24'
