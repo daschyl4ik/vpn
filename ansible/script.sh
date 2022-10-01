@@ -1,4 +1,3 @@
-
 function installOpenVPN() {
 	
 	# Get the "public" interface from the default route
