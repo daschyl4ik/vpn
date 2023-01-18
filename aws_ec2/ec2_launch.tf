@@ -17,7 +17,7 @@ resource "aws_security_group" "main" {
     from_port        = 443
     to_port          = 443
     protocol         = "tcp"
-    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr]
+    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr, var.my-converge-subnet-cidr]
   }
 
 ingress {
@@ -33,7 +33,7 @@ ingress {
     from_port        = 22
     to_port          = 22
     protocol         = "TCP"
-    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr]
+    cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr, var.my-converge-subnet-cidr]
   }
 
   
