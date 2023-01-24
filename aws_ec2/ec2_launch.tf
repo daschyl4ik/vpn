@@ -20,6 +20,14 @@ resource "aws_security_group" "main" {
     cidr_blocks      = [var.my-beeline-subnet-cidr, var.my-tele2-subnet-cidr, var.my-converge-subnet-cidr]
   }
 
+  ingress {
+    description      = "Http"
+    from_port        = 0
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
 ingress {
     description      = "OpenVPN from my device - UDP"
     from_port        = 1194
